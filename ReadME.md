@@ -126,7 +126,7 @@ If the request body is malformed (e.g., missing a field or has the wrong data ty
 ## Model Performance
 The served Logistic Regression model achieves 100% accuracy on the test set for the Iris dataset. The confusion matrix below visualizes its performance, showing zero misclassifications.
 
-![Confusion Matrix for Iris Classification](images/confusion_matrix.png)
+![Confusion Matrix for Iris Classification](images/confusionMatrix.png)
 
 ## Design Decisions & Engineering Insights
 
