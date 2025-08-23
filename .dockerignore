@@ -1,0 +1,25 @@
+
+
+# Git and project management
+.git
+.gitignore
+README.md
+
+# Python virtual environment
+.venv/
+venv/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Testing artifacts
+.pytest_cache/
+tests/
+
+# Local development files and documentation images
+images/
+.vscode/
+.idea/
