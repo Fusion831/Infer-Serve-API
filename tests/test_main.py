@@ -1,8 +1,26 @@
 # tests/test_main.py
 from fastapi.testclient import TestClient
 from app.main import app
+import pytest
 
-# NO client is created here anymore.
+
+@pytest.fixture(autouse=True)
+def mock_redis(mocker):
+    """
+    Fixture to mock the redis.Redis client in the application's main module.
+    It automatically runs for every test function in this file.
+    """
+    
+    mock_redis_client = mocker.MagicMock()
+    
+    
+    mocker.patch('app.main.redis.Redis', return_value=mock_redis_client)
+    
+    
+    mock_redis_client.incr.return_value = 5 
+    
+    
+    yield mock_redis_client
 
 def test_predict_success():
     
@@ -25,24 +43,23 @@ def test_predict_malformed():
         response = client.post("/predict", json=payload)
         assert response.status_code == 422
 
-def test_predict_rate_limit_exceeded(mocker):
-    
-    mock_redis_incr = mocker.patch("redis.Redis.incr")
-    
-    
-    mock_redis_incr.return_value = 11 
+def test_predict_rate_limit_exceeded(mock_redis):
+    """
+    Tests that a 429 error is returned when the rate limit is exceeded.
+    """
+    # INSTEAD of using mocker.patch, we directly configure the mock
+    # object that the fixture provided to us.
+    mock_redis.incr.return_value = 11  # A value OVER the limit of 10
 
-    
-    mocker.patch("redis.Redis.expire")
-    
     with TestClient(app) as client:
-        
-        response = client.post("/predict", json={
+        payload = {
             "sepal_length": 5.1,
             "sepal_width": 3.5,
             "petal_length": 1.4,
             "petal_width": 0.2
-        })
+        }
+        response = client.post("/predict", json=payload)
         
-        
+        # Now, the app will have received '11' from the mock, and this assert will pass.
         assert response.status_code == 429
+        assert "Rate limit exceeded" in response.json()["detail"]

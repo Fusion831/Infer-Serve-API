@@ -67,7 +67,7 @@ def predict(request: Request,features: IrisFeatures):
     if current_request > Rate_limit:
         raise HTTPException(
             status_code = 429,
-            detail = f"Too many request, limit is {Rate_limit} per minute"
+            detail=f"Rate limit exceeded. Please try again later. Limit is {Rate_limit} requests per minute."
         )
     model = request.app.state.model
     input_data = [[
