@@ -8,9 +8,9 @@ from redis.exceptions import ConnectionError
 from contextlib import asynccontextmanager
 
 Rate_limit = 10
-REDIS_HOST = os.getenv("Redis_host","localhost")
-REDIS_PORT = int(os.getenv("Redist_port",6379))
-REDIS_PASSWORD = os.getenv("REDIS_Password",None)
+REDIS_HOST = os.getenv("REDIS_HOST","localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT",6379))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD",None)
 
 
 
@@ -34,11 +34,11 @@ async def lifespan(app: FastAPI):
             decode_responses=True
         )
         app.state.redis.ping()
-        app.state.redis.ping()
+        
     except ConnectionError as e:
         print(f"Error connecting to Redis: {e}")
         app.state.redis = None
-        app.state.redis = None
+        
     yield
     app.state.model = None
     if app.state.redis:
