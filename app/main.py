@@ -9,6 +9,9 @@ class IrisFeatures(BaseModel):
     petal_length: float
     petal_width: float
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.model = joblib.load('app/model.pkl')
     yield
@@ -35,7 +38,11 @@ def predict(request: Request,features: IrisFeatures):
     ]]
     prediction = model.predict(input_data)
     iris = load_iris()
-    predicted_class = iris.target_names[prediction[0]]
+    if isinstance(iris, tuple):
+        iris_data = iris[0]
+    else:
+        iris_data = iris
+    predicted_class = iris_data.target_names[prediction[0]]
     return {"predicted_class": predicted_class}
 
 
