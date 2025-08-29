@@ -2,6 +2,16 @@ from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import joblib
 from sklearn.datasets import load_iris
+import os
+import redis
+from contextlib import asynccontextmanager
+
+Rate_limit = 10
+REDIS_HOST = os.getenv("Redis_host","localhost")
+REDIS_PORT = int(os.getenv("Redist_port",6379))
+REDIS_PASSWORD = os.getenv("REDIS_Password",None)
+
+
 
 class IrisFeatures(BaseModel):
     sepal_length: float
@@ -9,11 +19,12 @@ class IrisFeatures(BaseModel):
     petal_length: float
     petal_width: float
 
-from contextlib import asynccontextmanager
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.model = joblib.load('app/model.pkl')
+    print(f"Connecting to Redis port at: {REDIS_PORT}")
     yield
     app.state.model = None
 

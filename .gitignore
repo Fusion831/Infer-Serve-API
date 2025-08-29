@@ -1,7 +1,7 @@
 .idea/
 
 .mypy_cache/
-
+.env
 
 .DS_Store
 
