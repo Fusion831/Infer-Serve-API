@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request,HTTPException
 from pydantic import BaseModel
 import joblib
 from sklearn.datasets import load_iris
 import os
 import redis
+from redis.exceptions import ConnectionError
 from contextlib import asynccontextmanager
 
 Rate_limit = 10
@@ -25,8 +26,23 @@ class IrisFeatures(BaseModel):
 async def lifespan(app: FastAPI):
     app.state.model = joblib.load('app/model.pkl')
     print(f"Connecting to Redis port at: {REDIS_PORT}")
+    try: 
+        app.state.redis = redis.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            password=REDIS_PASSWORD,
+            decode_responses=True
+        )
+        app.state.redis.ping()
+        app.state.redis.ping()
+    except ConnectionError as e:
+        print(f"Error connecting to Redis: {e}")
+        app.state.redis = None
+        app.state.redis = None
     yield
     app.state.model = None
+    if app.state.redis:
+        app.state.redis.close()
 
 app = FastAPI(lifespan=lifespan)
 
@@ -40,6 +56,19 @@ def read_root():
 
 @app.post("/predict")
 def predict(request: Request,features: IrisFeatures):
+    redis_client = request.app.state.redis
+    if not redis_client:
+        raise HTTPException(status_code = 500, detail = "Internal Server Error, Redis not connected.")
+    client_ip = request.client.host if request.client else "unknown"
+    redis_key = f"rate-limit:{client_ip}"
+    current_request = redis_client.incr(redis_key)
+    if current_request == 1:
+        redis_client.expire(redis_key, 60)
+    if current_request > Rate_limit:
+        raise HTTPException(
+            status_code = 429,
+            detail = f"Too many request, limit is {Rate_limit} per minute"
+        )
     model = request.app.state.model
     input_data = [[
         features.sepal_length,
